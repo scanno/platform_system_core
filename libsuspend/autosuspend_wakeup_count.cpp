@@ -70,7 +70,7 @@ static std::string samsung_touchscreen_enabled() {
 }
 
 static bool samsung_touchscreen_set(const std::string& path, bool enable) {
-	LOG(INFO) << "Setting samsung to path " << path;
+	LOG(INFO) << "Setting samsung to path " << path << ":" << enable;
 	return android::base::WriteStringToFile(enable ? "1" : "0", path);
 }
 
@@ -116,16 +116,11 @@ static void* suspend_thread_func(void* arg __attribute__((unused))) {
         LOG(VERBOSE) << "write " << wakeup_count << " to wakeup_count";
         if (WriteStringToFd(wakeup_count, wakeup_count_fd)) {
             LOG(VERBOSE) << "write " << sleep_state << " to " << sys_power_state;
+            if(samsungTs != "")
+                samsung_touchscreen_set(samsungTs, 0);
             success = WriteStringToFd(sleep_state, state_fd);
-
-            if(success) {
-                if(samsungTs != "") {
-                    LOG(INFO) << "Resetting Samsung TS";
-                    samsung_touchscreen_set(samsungTs, 0);
-                    for(int i=0; i<10 && !samsung_touchscreen_set(samsungTs, 1); i++)
-                        LOG(INFO) << "Resetting Samsung TS: try " << i;
-                }
-            }
+            if(samsungTs != "")
+                samsung_touchscreen_set(samsungTs, 1);
 
             void (*func)(bool success) = wakeup_func;
             if (func != NULL) {
